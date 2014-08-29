@@ -111,6 +111,52 @@ sub flush_memoization {
  
 =head2 statement
 
+This takes the following arguments and returns a suitable SQL statement
+
+=over
+
+=item type 
+
+Type of statement.  Options are:
+
+=over
+
+=item temp
+
+Create a temporary table
+
+=item copy
+
+sql COPY statement
+
+=item upsert
+
+Update/Insert CTE pulling temp table
+
+=back
+
+=item table
+
+Name of table
+
+=item tempname
+
+Name of temp table
+
+=item insert_cols
+
+Column names for insert
+
+=item update_cols
+
+Column names for update
+
+=item key_cols
+
+Names of columns in primary key.
+
+=back
+
 =cut
 
 sub _sanitize_ident {
@@ -175,6 +221,28 @@ sub statement {
 
 Creates a temporary table named "pg_object.bulkload" and copies the data there
 
+If the first argument is an object, then if there is a function by the name 
+of the object, it will provide the value.
+
+=over
+
+=item table
+
+Table to upsert into
+
+=item insert_cols
+
+Columns to insert (by name)
+
+=item update_cols
+
+Columns to update (by name)
+
+=item key_cols
+
+Key columns (by name)
+
+=back
 
 =cut
 
@@ -182,7 +250,7 @@ sub _build_args {
     my ($init_args, $obj);
     my @arglist = qw(table insert_cols update_cols key_cols);
     return { 
-       map { for my $val (try { $obj->$_ }, $arglist->{$_}){
+       map { for my $val ($arglist->{$_}, try { $obj->$_ } ){
                          $_ => $val if defined $val;
                       }
        } @arglist 
@@ -214,6 +282,20 @@ sub upsert {
 }
 
 =head2 copy
+
+Copies data into the specified table.  The following arguments are used:
+
+=over
+
+=item table
+
+Table to upsert into
+
+=item insert_cols
+
+Columns to insert (by name)
+
+=back
 
 =cut
 
