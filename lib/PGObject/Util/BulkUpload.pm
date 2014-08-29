@@ -43,18 +43,18 @@ To copy to a temp table and then upsert:
 Or if you prefer to run the statements yourself:
 
   PGObject::Util::BulkUpload->statement(
-     {table => 'mytable', type  => 'temp', tempname => 'foo_123'}
+     table => 'mytable', type  => 'temp', tempname => 'foo_123'
   );
   PGObject::Util::BulkUpload->statement(
-     {table => 'mytable', type  => 'copy', insert_cols => ['col1', 'col2']}
+     table => 'mytable', type  => 'copy', insert_cols => ['col1', 'col2']
   );
   PGObject::Util::BulkUpload->statement(
-     {type        => 'upsert',
+      type        => 'upsert',
       tempname    => 'foo_123',
       table       => 'mytable',
       insert_cols => ['col1', 'col2'],
       update_cols => ['col1'],
-      key_cols    => ['col2']}
+      key_cols    => ['col2']
   );
 
 If you are running repetitive calls, you may be able to trade time for memory 
@@ -165,7 +165,7 @@ sub _statement_upsert {
 }
 
 sub statement {
-    my $args = shift;
+    my %args = @_;
     $args = shift if $args eq __PACKAGE__;
     croak "Missing argument 'type'" unless $args->{type};
     &{"_statement_$args->{type}"}($args);
@@ -204,11 +204,11 @@ sub upsert {
     # safe but a plain drop without schema qualification risks losing user data.
 
     $dbh->do("DROP TABLE IF EXISTS pg_temp.pgobject_bulkloader");
-    $dbh->do(statement({ %$args, (type => 'temp', 
+    $dbh->do(statement( %$args, (type => 'temp', 
                               tempname => 'pgobject_bulkloader')
-    }));
+    ));
     copy({(%$args, (table => 'pgobject_bulkloader'))}, @_);
-    $dbh->do(statement({ %$args, (type => 'upsert', 
+    $dbh->do(statement( %$args, (type => 'upsert', 
                               tempname => 'pgobject_bulkloader')));
     $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");
 }
@@ -237,7 +237,7 @@ sub copy {
     };
     my $args = _build_args($args, $_[0]);
     my $dbh = $args->{dbh};
-    $dbh->do(statement($args));
+    $dbh->do(statement(%$args));
     $dbh->put_copydata(_to_csv({cols => $args->{insert_cols}, @_));
     $dbh->put_copyend();
 }
