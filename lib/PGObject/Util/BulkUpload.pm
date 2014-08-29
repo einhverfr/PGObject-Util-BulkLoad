@@ -158,11 +158,72 @@ sub statement {
 
 =head2 upsert
 
+=cut
+
+sub _build_args {
+    my ($init_args, $obj);
+    my @arglist = qw(table insert_cols update_cols key_cols);
+    return { 
+       map { for my $val (try { $obj->$_ }, $arglist->{$_}){
+                         $_ => $val if defined $val;
+                      }
+       } @arglist 
+    }
+}
+
+sub upsert {
+    my ($args) = shift;
+    $args = shift if $args eq __PACKAGE__;
+    try {
+       $args->can('foo');
+       unshift $args; # args is an object
+    };
+    my $args = _build_args($args, $_[0]);
+    my $dbh = $args->{dbh};
+
+    # pg_temp is the schema of temporary tables.  If someone wants to create
+    # a permanent table there, they are inviting disaster.  At any rate this is
+    # safe but a plain drop without schema qualification risks losing user data.
+
+    $dbh->do("DROP TABLE IF EXISTS pg_temp.pgobject_bulkloader");
+    $dbh->do(statement({ %$args, (type => 'temp', 
+                              tempname => 'pgobject_bulkloader')
+    }));
+    copy({(%$args, (table => 'pgobject_bulkloader'))}, @_);
+    $dbh->do(statement({ %$args, (type => 'upsert', 
+                              tempname => 'pgobject_bulkloader')));
+    $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");
+}
+
 =head2 copy
+
+=cut
+
+sub copy {
+    my ($args) = shift;
+    $args = shift if $args eq __PACKAGE__;
+    try {
+       $args->can('foo');
+       unshift $args; # args is an object
+    };
+    my $args = _build_args($args, $_[0]);
+    my $dbh = $args->{dbh};
+    $dbh->do(statement($args));
+    $dbh->put_copydata(_to_csv({cols => $args->{insert_cols}, @_));
+    $dbh->put_copyend();
+}
 
 =head1 AUTHOR
 
 Chris Travers, C<< <chris.travers at gmail.com> >>
+
+=head1 CO-MAINTAINERS
+
+=over
+
+=item Binary.com C<< <perl@binary.com> >>
+
+=back
 
 =head1 BUGS
 
