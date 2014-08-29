@@ -76,6 +76,11 @@ To flush cache
 
 =head2 memoize_statements
 
+This function exists to memoize statement calls, i.e. generate the exact same 
+statements on the same argument calls.  This isn't too likely to be useful in
+most cases but it may be if you have repeated bulk loader calls in a persistent
+script (for example real-time importing of csv data from a frequent source).
+
 =cut
 
 sub memoize_statements {
@@ -84,6 +89,8 @@ sub memoize_statements {
 
 =head2 unmemoize 
 
+Unmemoizes the statement calls.
+
 =cut
 
 sub unmemoize {
@@ -91,6 +98,10 @@ sub unmemoize {
 }
 
 =head2 flush_memoization
+
+Flushes the cache for statement memoization.  Does *not* flush the cache for
+escaping memoization since that is a bigger win and a pure function accepting
+simple strings.
 
 =cut
 
@@ -154,9 +165,16 @@ sub _statement_upsert {
 }
 
 sub statement {
+    my $args = shift;
+    $args = shift if $args eq __PACKAGE__;
+    croak "Missing argument 'type'" unless $args->{type};
+    &{"_statement_$args->{type}"}($args);
 }
 
 =head2 upsert
+
+Creates a temporary table named "pg_object.bulkload" and copies the data there
+
 
 =cut
 
