@@ -199,6 +199,17 @@ sub upsert {
 
 =cut
 
+sub _to_csv {
+    my ($args) = shift;
+
+    my $csv = Text::CSV->new();
+    join("\n", map {
+       my $obj = $_;
+       $csv->combine(map { $obj->{$_} } @{$args->{cols}});
+       $csv->string();
+    } @_);
+}
+
 sub copy {
     my ($args) = shift;
     $args = shift if $args eq __PACKAGE__;
