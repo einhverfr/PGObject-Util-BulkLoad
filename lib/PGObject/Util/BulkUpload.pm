@@ -4,9 +4,12 @@ use 5.006;
 use strict;
 use warnings FATAL => 'all';
 
+use Memoize;
+use Text::CSV;
+
 =head1 NAME
 
-PGObject::Util::BulkUpload - The great new PGObject::Util::BulkUpload!
+PGObject::Util::BulkUpload - Bulk Upload records into PostgreSQL
 
 =head1 VERSION
 
@@ -19,35 +22,143 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+To insert all rows into a table using COPY:
 
-Perhaps a little code snippet.
+  PGObject::Util::BulkUpload->copy(
+      {table => 'mytable', insert_cols => ['col1', 'col2'], dbh => $dbh}, 
+      @objects
+  );
 
-    use PGObject::Util::BulkUpload;
+To copy to a temp table and then upsert:
 
-    my $foo = PGObject::Util::BulkUpload->new();
-    ...
+  PGObject::Util::BulkUpload->upsert(
+      {table       => 'mytable', 
+       insert_cols => ['col1', 'col2'], 
+       update_cols => ['col1'],
+       key_cols    => ['col2'],
+       dbh         => $dbh}, 
+      @objects
+  );
 
-=head1 EXPORT
+Or if you prefer to run the statements yourself:
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+  PGObject::Util::BulkUpload->statement(
+     {table => 'mytable', type  => 'temp', tempname => 'foo_123'}
+  );
+  PGObject::Util::BulkUpload->statement(
+     {table => 'mytable', type  => 'copy', insert_cols => ['col1', 'col2']}
+  );
+  PGObject::Util::BulkUpload->statement(
+     {type        => 'upsert',
+      tempname    => 'foo_123',
+      table       => 'mytable',
+      insert_cols => ['col1', 'col2'],
+      update_cols => ['col1'],
+      key_cols    => ['col2']}
+  );
+
+If you are running repetitive calls, you may be able to trade time for memory 
+using Memoize by unning the following:
+
+  PGObject::Util::BulkUpload->memoize_statements;
+
+To unmemoize:
+
+  PGObject::Util::BulkUpload->unmemoize;
+
+To flush cache
+
+  PGObject::Util::BulkUpload->flush_memoization;
+
+=head1 DESCRIPTION
 
 =head1 SUBROUTINES/METHODS
 
-=head2 function1
+=head2 memoize_statements
 
 =cut
 
-sub function1 {
+sub memoize_statements {
+    memoize 'statement';
 }
 
-=head2 function2
+=head2 unmemoize 
 
 =cut
 
-sub function2 {
+sub unmemoize {
+    unmemoize 'statement';
 }
+
+=head2 flush_memoization
+
+=cut
+
+sub flush_memoization {
+    Memoization::flush_cache('statement');
+}
+ 
+=head2 statement
+
+=cut
+
+sub _sanitize_ident {
+    my($string) = @_;
+    $string =~ s/"/""/g;
+    qq("$string");
+}
+memoize '_sanitize_ident';
+
+sub _statement_temp {
+    my ($args) = @_;
+
+    "CREATE TEMPORARY TABLE " . _sanitize_ident($args->{tempname}) .
+    "( LIKE " . _sanitize_ident($args->{table}) . ")";
+}
+
+sub _statement_copy {
+    my ($args) = @_;
+    croak 'No insert cols' unless $args->{insert_cols};
+
+    "COPY " . _sanitize_ident($args->{table}) . "(" .
+      join(', ', map { _sanitize_ident($_) } @{$args->{insert_cols}}) . ') ' .
+      "FROM STDIN WITH CSV";
+}
+
+sub _statement_upsert {
+    my ($args) = @_;
+    for (qw(insert_cols update_cols key_cols table tempname)){
+       croak "Missing argument $_" unless $args->{$_};
+    }
+    my $table = _sanitize_ident($arg->{table});
+    my $temp = _sanitize_ident($arg->{tempname})
+
+    "WITH up (
+     UPDATE $table
+        SET " . join(",
+            ", map {"$table." . _sanitize_ident($_) . ' = ' .
+                    "$temp." _sanitize_ident($_)} @{$args->{update_cols}}) . "
+       FROM $table, $temp
+      WHERE " . join("
+            AND ", map {"$table." . _sanitize_ident($_) . ' = ' .
+                    "$temp." _sanitize_ident($_)} @{$args->{key_cols}}) . "
+ RETURNING " . join(", ", map {sanitize_ident($_)} @{$args->{key_cols}} ."
+)
+    INSERT INTO $table (" . join(", ", 
+                            map {sanitize_ident($_)} @{$args->{insert_cols}}) . "
+    SELECT " . join(", " map {sanitize_ident($_)} @{$args->{insert_cols}}) . "
+      FROM $temp 
+     WHERE (". join(", ", map {sanitize_ident($_)} @{$args->{key_cols}} .") 
+           not in(select row(".join(", ", map {sanitize_ident($_)} @{$args->{key_cols}} .") FROM up)";
+
+}
+
+sub statement {
+}
+
+=head2 upsert
+
+=head2 copy
 
 =head1 AUTHOR
 
