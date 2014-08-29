@@ -4,6 +4,7 @@ use 5.006;
 use strict;
 use warnings FATAL => 'all';
 
+use Carp;
 use Memoize;
 use Text::CSV;
 
@@ -94,7 +95,7 @@ Unmemoizes the statement calls.
 =cut
 
 sub unmemoize {
-    unmemoize 'statement';
+    Memoize::unmemoize 'statement';
 }
 
 =head2 flush_memoization
@@ -187,34 +188,33 @@ sub _statement_upsert {
     for (qw(insert_cols update_cols key_cols table tempname)){
        croak "Missing argument $_" unless $args->{$_};
     }
-    my $table = _sanitize_ident($arg->{table});
-    my $temp = _sanitize_ident($arg->{tempname})
+    my $table = _sanitize_ident($args->{table});
+    my $temp = _sanitize_ident($args->{tempname});
 
     "WITH up (
      UPDATE $table
         SET " . join(",
             ", map {"$table." . _sanitize_ident($_) . ' = ' .
-                    "$temp." _sanitize_ident($_)} @{$args->{update_cols}}) . "
+                    "$temp." . _sanitize_ident($_)} @{$args->{update_cols}}) . "
        FROM $table, $temp
       WHERE " . join("
             AND ", map {"$table." . _sanitize_ident($_) . ' = ' .
-                    "$temp." _sanitize_ident($_)} @{$args->{key_cols}}) . "
- RETURNING " . join(", ", map {sanitize_ident($_)} @{$args->{key_cols}} ."
+                    "$temp." . _sanitize_ident($_)} @{$args->{key_cols}}) . "
+ RETURNING " . join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) ."
 )
     INSERT INTO $table (" . join(", ", 
-                            map {sanitize_ident($_)} @{$args->{insert_cols}}) . "
-    SELECT " . join(", " map {sanitize_ident($_)} @{$args->{insert_cols}}) . "
+                            map {_sanitize_ident($_)} @{$args->{insert_cols}}) . "
+    SELECT " . join(", ", map {_sanitize_ident($_)} @{$args->{insert_cols}}) . "
       FROM $temp 
-     WHERE (". join(", ", map {sanitize_ident($_)} @{$args->{key_cols}} .") 
-           not in(select row(".join(", ", map {sanitize_ident($_)} @{$args->{key_cols}} .") FROM up)";
+     WHERE (". join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") 
+           not in(select row(".join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") FROM up)";
 
 }
 
 sub statement {
     my %args = @_;
-    $args = shift if $args eq __PACKAGE__;
-    croak "Missing argument 'type'" unless $args->{type};
-    &{"_statement_$args->{type}"}($args);
+    croak "Missing argument 'type'" unless $args{type};
+    &{"_statement_$args{type}"}(\%args);
 }
 
 =head2 upsert
@@ -250,8 +250,8 @@ sub _build_args {
     my ($init_args, $obj);
     my @arglist = qw(table insert_cols update_cols key_cols);
     return { 
-       map { for my $val ($arglist->{$_}, try { $obj->$_ } ){
-                         $_ => $val if defined $val;
+       map { for my $val ($init_args->{$_}, try { $obj->$_ } ){
+                         return $_ => $val if defined $val;
                       }
        } @arglist 
     }
@@ -262,9 +262,9 @@ sub upsert {
     $args = shift if $args eq __PACKAGE__;
     try {
        $args->can('foo');
-       unshift $args; # args is an object
+       unshift @_, $args; # args is an object
     };
-    my $args = _build_args($args, $_[0]);
+    $args = _build_args($args, $_[0]);
     my $dbh = $args->{dbh};
 
     # pg_temp is the schema of temporary tables.  If someone wants to create
@@ -315,12 +315,12 @@ sub copy {
     $args = shift if $args eq __PACKAGE__;
     try {
        $args->can('foo');
-       unshift $args; # args is an object
+       unshift @_, $args; # args is an object
     };
-    my $args = _build_args($args, $_[0]);
+    $args = _build_args($args, $_[0]);
     my $dbh = $args->{dbh};
     $dbh->do(statement(%$args));
-    $dbh->put_copydata(_to_csv({cols => $args->{insert_cols}, @_));
+    $dbh->put_copydata(_to_csv({cols => $args->{insert_cols}}, @_));
     $dbh->put_copyend();
 }
 
@@ -332,7 +332,7 @@ Chris Travers, C<< <chris.travers at gmail.com> >>
 
 =over
 
-=item Binary.com C<< <perl@binary.com> >>
+=item Binary.com, C<< <perl at binary.com> >>
 
 =back
 
