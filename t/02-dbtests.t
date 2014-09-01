@@ -100,7 +100,7 @@ ok(PGObject::Util::BulkLoad::copy($series3, @secondobj),
 
 is(count_in_table('foo2'), 6, '6 rows saved in copy to foo2');
 
-ok(PGObject::Util::BulkLoad::upsert($series3, @secondobj, {'fo"o"' => '123', bar => 111}), 
+ok(PGObject::Util::BulkLoad::upsert($series3, @secondobj, {'fo"o"' => '123', bar => 111, 'b"a"z' => 12222}), 
 'can upsert after copy from previous routine');
 
 is(count_in_table('foo2'), 7, '7 objects in foo2 after second upsert');

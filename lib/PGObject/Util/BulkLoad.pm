@@ -280,8 +280,6 @@ sub upsert {
                               tempname => 'pgobject_bulkloader')
     ));
     copy({(%$args, (table => 'pgobject_bulkloader'))}, @_);
-    warn(statement( %$args, (type => 'upsert',
-                              tempname => 'pgobject_bulkloader')));
     $dbh->do(statement( %$args, (type => 'upsert', 
                               tempname => 'pgobject_bulkloader')));
     $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");

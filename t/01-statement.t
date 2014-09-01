@@ -17,14 +17,14 @@ my $convert1 = {
            copy => 'COPY "foo"("foo", "bar", "baz") FROM STDIN WITH CSV',
            temp => 'CREATE TEMPORARY TABLE "tfoo" ( LIKE "foo" )',
          upsert => 'WITH UP AS (
-                       UPDATE "foo" SET "foo"."foo" = "tfoo"."foo", "foo"."bar" = "tfoo"."bar"
-                         FROM "foo", "tfoo"
+                       UPDATE "foo" SET "foo" = "tfoo"."foo", "bar" = "tfoo"."bar"
+                         FROM "tfoo"
                         WHERE "foo"."baz" = "tfoo"."baz"
-                    RETURNING "baz"
+                    RETURNING "foo"."baz"
                   )
                   INSERT INTO "foo" ("foo", "bar", "baz")
                   SELECT "foo", "bar", "baz" FROM "tfoo"
-                  WHERE ("baz") NOT IN (SELECT ROW("baz") FROM UP)'
+                  WHERE ROW("tfoo"."baz") NOT IN (SELECT UP."baz" FROM UP)'
                   },
 };
 
@@ -38,14 +38,14 @@ my $convert2 = {
            copy => 'COPY "foo"("foo", "bar", "baz") FROM STDIN WITH CSV',
            temp => 'CREATE TEMPORARY TABLE "tfoo" ( LIKE "foo" )',
          upsert => 'WITH UP AS (
-                       UPDATE "foo" SET "foo"."foo" = "tfoo"."foo"
-                         FROM "foo", "tfoo"
+                       UPDATE "foo" SET "foo" = "tfoo"."foo"
+                         FROM "tfoo"
                         WHERE "foo"."bar" = "tfoo"."bar" AND "foo"."baz" = "tfoo"."baz"
-                    RETURNING "bar", "baz"
+                    RETURNING "foo"."bar", "foo"."baz"
                   )
                   INSERT INTO "foo" ("foo", "bar", "baz")
                   SELECT "foo", "bar", "baz" FROM "tfoo"
-                  WHERE ("bar", "baz") NOT IN (SELECT ROW("bar", "baz") FROM UP)'
+                  WHERE ROW("tfoo"."bar", "tfoo"."baz") NOT IN (SELECT UP."bar", UP."baz" FROM UP)'
                   },
 };
 
@@ -59,14 +59,14 @@ my $convert3 = {
            copy => 'COPY "foo"("fo""o""", "bar", "b""a""z") FROM STDIN WITH CSV',
            temp => 'CREATE TEMPORARY TABLE "tfoo" ( LIKE "foo" )',
          upsert => 'WITH UP AS (
-                       UPDATE "foo" SET "foo"."fo""o""" = "tfoo"."fo""o""", "foo"."bar" = "tfoo"."bar"
-                         FROM "foo", "tfoo"
+                       UPDATE "foo" SET "fo""o""" = "tfoo"."fo""o""", "bar" = "tfoo"."bar"
+                         FROM "tfoo"
                         WHERE "foo"."b""a""z" = "tfoo"."b""a""z"
-                    RETURNING "b""a""z"
+                    RETURNING "foo"."b""a""z"
                   )
                   INSERT INTO "foo" ("fo""o""", "bar", "b""a""z")
                   SELECT "fo""o""", "bar", "b""a""z" FROM "tfoo"
-                  WHERE ("b""a""z") NOT IN (SELECT ROW("b""a""z") FROM UP)'
+                  WHERE ROW("tfoo"."b""a""z") NOT IN (SELECT UP."b""a""z" FROM UP)'
                   },
 };
 
