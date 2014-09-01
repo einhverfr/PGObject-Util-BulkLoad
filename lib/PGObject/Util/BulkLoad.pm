@@ -195,20 +195,20 @@ sub _statement_upsert {
     "WITH UP AS (
      UPDATE $table
         SET " . join(",
-            ", map {"$table." . _sanitize_ident($_) . ' = ' .
+            ", map { _sanitize_ident($_) . ' = ' .
                     "$temp." . _sanitize_ident($_)} @{$args->{update_cols}}) . "
-       FROM $table, $temp
+       FROM $temp
       WHERE " . join("
             AND ", map {"$table." . _sanitize_ident($_) . ' = ' .
                     "$temp." . _sanitize_ident($_)} @{$args->{key_cols}}) . "
- RETURNING " . join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) ."
+ RETURNING " . join(", ", map {"$table." . _sanitize_ident($_)} @{$args->{key_cols}}) ."
 )
     INSERT INTO $table (" . join(", ", 
                             map {_sanitize_ident($_)} @{$args->{insert_cols}}) . ")
     SELECT " . join(", ", map {_sanitize_ident($_)} @{$args->{insert_cols}}) . "
       FROM $temp 
-     WHERE (". join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") 
-           NOT IN (SELECT ROW(".join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") FROM UP)";
+     WHERE ROW(". join(", ", map { "$temp." . _sanitize_ident($_)} @{$args->{key_cols}}) .") 
+           NOT IN (SELECT ".join(", ", map { "UP." . _sanitize_ident($_)} @{$args->{key_cols}}) ." FROM UP)";
 
 }
 
@@ -280,6 +280,8 @@ sub upsert {
                               tempname => 'pgobject_bulkloader')
     ));
     copy({(%$args, (table => 'pgobject_bulkloader'))}, @_);
+    warn(statement( %$args, (type => 'upsert',
+                              tempname => 'pgobject_bulkloader')));
     $dbh->do(statement( %$args, (type => 'upsert', 
                               tempname => 'pgobject_bulkloader')));
     $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");

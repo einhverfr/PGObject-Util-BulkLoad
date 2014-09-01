@@ -27,8 +27,8 @@ sub count_in_table {
 
 my $series1 = {
    insert_cols => [qw(foo bar baz)], 
-   update_cols => [qw(foo bar)],
-   key_cols    => ['baz'],
+   update_cols => [qw(foo baz)],
+   key_cols    => ['bar'],
    table       => 'foo',
    dbh         => $dbh,
 };
