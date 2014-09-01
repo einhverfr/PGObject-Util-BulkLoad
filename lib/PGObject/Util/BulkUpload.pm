@@ -171,7 +171,7 @@ sub _statement_temp {
     my ($args) = @_;
 
     "CREATE TEMPORARY TABLE " . _sanitize_ident($args->{tempname}) .
-    "( LIKE " . _sanitize_ident($args->{table}) . ")";
+    " ( LIKE " . _sanitize_ident($args->{table}) . " )";
 }
 
 sub _statement_copy {
@@ -191,7 +191,7 @@ sub _statement_upsert {
     my $table = _sanitize_ident($args->{table});
     my $temp = _sanitize_ident($args->{tempname});
 
-    "WITH up (
+    "WITH UP (
      UPDATE $table
         SET " . join(",
             ", map {"$table." . _sanitize_ident($_) . ' = ' .
@@ -203,17 +203,18 @@ sub _statement_upsert {
  RETURNING " . join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) ."
 )
     INSERT INTO $table (" . join(", ", 
-                            map {_sanitize_ident($_)} @{$args->{insert_cols}}) . "
+                            map {_sanitize_ident($_)} @{$args->{insert_cols}}) . ")
     SELECT " . join(", ", map {_sanitize_ident($_)} @{$args->{insert_cols}}) . "
       FROM $temp 
      WHERE (". join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") 
-           not in(select row(".join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") FROM up)";
+           NOT IN (SELECT ROW(".join(", ", map {_sanitize_ident($_)} @{$args->{key_cols}}) .") FROM UP)";
 
 }
 
 sub statement {
     my %args = @_;
     croak "Missing argument 'type'" unless $args{type};
+    no strict 'refs';
     &{"_statement_$args{type}"}(\%args);
 }
 
