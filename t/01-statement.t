@@ -16,7 +16,7 @@ my $convert1 = {
    stmt        => {
            copy => 'COPY "foo"("foo", "bar", "baz") FROM STDIN WITH CSV',
            temp => 'CREATE TEMPORARY TABLE "tfoo" ( LIKE "foo" )',
-         upsert => 'WITH UP (
+         upsert => 'WITH UP AS (
                        UPDATE "foo" SET "foo"."foo" = "tfoo"."foo", "foo"."bar" = "tfoo"."bar"
                          FROM "foo", "tfoo"
                         WHERE "foo"."baz" = "tfoo"."baz"
@@ -37,7 +37,7 @@ my $convert2 = {
    stmt        => {
            copy => 'COPY "foo"("foo", "bar", "baz") FROM STDIN WITH CSV',
            temp => 'CREATE TEMPORARY TABLE "tfoo" ( LIKE "foo" )',
-         upsert => 'WITH UP (
+         upsert => 'WITH UP AS (
                        UPDATE "foo" SET "foo"."foo" = "tfoo"."foo"
                          FROM "foo", "tfoo"
                         WHERE "foo"."bar" = "tfoo"."bar" AND "foo"."baz" = "tfoo"."baz"
@@ -58,7 +58,7 @@ my $convert3 = {
    stmt        => {
            copy => 'COPY "foo"("fo""o""", "bar", "b""a""z") FROM STDIN WITH CSV',
            temp => 'CREATE TEMPORARY TABLE "tfoo" ( LIKE "foo" )',
-         upsert => 'WITH UP (
+         upsert => 'WITH UP AS (
                        UPDATE "foo" SET "foo"."fo""o""" = "tfoo"."fo""o""", "foo"."bar" = "tfoo"."bar"
                          FROM "foo", "tfoo"
                         WHERE "foo"."b""a""z" = "tfoo"."b""a""z"

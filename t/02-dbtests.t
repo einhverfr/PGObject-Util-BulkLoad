@@ -3,7 +3,7 @@ use PGObject::Util::BulkLoad;
 use DBI;
 
 plan skip_all => 'Not set up for db tests' unless $ENV{DB_TESTING};
-plan tests => 11;
+plan tests => 15;
 
 # SETUP
 my $dbh1 = DBI->connect('dbi:Pg:dbname=postgres', 'postgres');

@@ -192,7 +192,7 @@ sub _statement_upsert {
     my $table = _sanitize_ident($args->{table});
     my $temp = _sanitize_ident($args->{tempname});
 
-    "WITH UP (
+    "WITH UP AS (
      UPDATE $table
         SET " . join(",
             ", map {"$table." . _sanitize_ident($_) . ' = ' .
