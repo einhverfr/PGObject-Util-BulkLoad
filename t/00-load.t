@@ -7,7 +7,7 @@ use Test::More;
 plan tests => 1;
 
 BEGIN {
-    use_ok( 'PGObject::Util::BulkUpload' ) || print "Bail out!\n";
+    use_ok( 'PGObject::Util::BulkLoad' ) || print "Bail out!\n";
 }
 
-diag( "Testing PGObject::Util::BulkUpload $PGObject::Util::BulkUpload::VERSION, Perl $], $^X" );
+diag( "Testing PGObject::Util::BulkLoad $PGObject::Util::BulkUpload::VERSION, Perl $], $^X" );

@@ -4,10 +4,10 @@ use warnings FATAL => 'all';
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME             => 'PGObject::Util::BulkUpload',
+    NAME             => 'PGObject::Util::BulkLoad',
     AUTHOR           => q{Chris Travers <chris.travers@gmail.com>},
-    VERSION_FROM     => 'lib/PGObject/Util/BulkUpload.pm',
-    ABSTRACT_FROM    => 'lib/PGObject/Util/BulkUpload.pm',
+    VERSION_FROM     => 'lib/PGObject/Util/BulkLoad.pm',
+    ABSTRACT_FROM    => 'lib/PGObject/Util/BulkLoad.pm',
     LICENSE          => 'BSD',
     PL_FILES         => {},
     MIN_PERL_VERSION => 5.006,
@@ -22,5 +22,5 @@ WriteMakefile(
         #'Foo::Bar::Module' => 5.0401,
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean => { FILES => 'PGObject-Util-BulkUpload-*' },
+    clean => { FILES => 'PGObject-Util-BulkLoad-*' },
 );

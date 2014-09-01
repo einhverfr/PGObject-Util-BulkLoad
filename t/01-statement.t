@@ -1,4 +1,4 @@
-use PGObject::Util::BulkUpload;
+use PGObject::Util::BulkLoad;
 use Test::More tests => 9;
 
 sub normalize_whitespace {
