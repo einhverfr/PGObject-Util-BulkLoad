@@ -1,4 +1,4 @@
-package PGObject::Util::BulkUpload;
+package PGObject::Util::BulkLoad;
 
 use 5.006;
 use strict;
@@ -7,6 +7,7 @@ use warnings FATAL => 'all';
 use Carp;
 use Memoize;
 use Text::CSV;
+use Try::Tiny;
 
 =head1 NAME
 
@@ -248,12 +249,14 @@ Key columns (by name)
 =cut
 
 sub _build_args {
-    my ($init_args, $obj);
-    my @arglist = qw(table insert_cols update_cols key_cols);
+    my ($init_args, $obj) = @_;
+    my @arglist = qw(table insert_cols update_cols key_cols dbh);
     return { 
-       map { for my $val ($init_args->{$_}, try { $obj->$_ } ){
-                         return $_ => $val if defined $val;
-                      }
+       map {  my $val;
+              for my $v ($init_args->{$_}, try { $obj->$_ } ){
+                  $val = $v if defined $v;
+              }
+              $_ => $val;
        } @arglist 
     }
 }
@@ -315,14 +318,16 @@ sub copy {
     my ($args) = shift;
     $args = shift if $args eq __PACKAGE__;
     try {
+       no warnings;
+       no strict;
        $args->can('foo');
        unshift @_, $args; # args is an object
     };
     $args = _build_args($args, $_[0]);
     my $dbh = $args->{dbh};
-    $dbh->do(statement(%$args));
-    $dbh->put_copydata(_to_csv({cols => $args->{insert_cols}}, @_));
-    $dbh->put_copyend();
+    $dbh->do(statement(%$args, (type => 'copy')));
+    $dbh->pg_putcopydata(_to_csv({cols => $args->{insert_cols}}, @_));
+    $dbh->pg_putcopyend();
 }
 
 =head1 AUTHOR

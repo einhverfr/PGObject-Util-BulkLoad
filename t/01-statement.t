@@ -72,7 +72,7 @@ my $convert3 = {
 
 for my $stype (qw(temp copy upsert)){
     my $iter = 0;
-    is(normalize_whitespace(PGObject::Util::BulkUpload::statement(%$_)), 
+    is(normalize_whitespace(PGObject::Util::BulkLoad::statement(%$_)), 
        normalize_whitespace($_->{stmt}->{$stype}),
        "$stype for convert$_->{iter}")
         for map {

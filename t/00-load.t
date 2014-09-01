@@ -10,4 +10,4 @@ BEGIN {
     use_ok( 'PGObject::Util::BulkLoad' ) || print "Bail out!\n";
 }
 
-diag( "Testing PGObject::Util::BulkLoad $PGObject::Util::BulkUpload::VERSION, Perl $], $^X" );
+diag( "Testing PGObject::Util::BulkLoad $PGObject::Util::BulkLoad::VERSION, Perl $], $^X" );
