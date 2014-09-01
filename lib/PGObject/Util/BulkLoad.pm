@@ -166,7 +166,6 @@ sub _sanitize_ident {
     $string =~ s/"/""/g;
     qq("$string");
 }
-memoize '_sanitize_ident';
 
 sub _statement_temp {
     my ($args) = @_;
