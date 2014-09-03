@@ -10,7 +10,6 @@ perl:
 addons:
    postgresql: "9.3"
 env:
-  - RELEASE_TESTING: 1
   - DB_TESTING: 1
 before_install:
    - "cpanm DBI"
