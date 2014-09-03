@@ -65,7 +65,7 @@ my @secondobj = (
   { bar=> '424', 'b"a"z' => '123446', 'fo"o"' => 'f,0,0,bar',  },
   { bar=> '425', 'b"a"z' => '123444', 'fo"o"' => 'foo2',       },
   { bar=> '426', 'b"a"z' => '123448', 'fo"o"' => 'foo3',       },
-  { bar=> '427', 'b"a"z' => '123444', 'fo"o"' => 'foo4',       },
+  { bar=> '427',                      'fo"o"' => 'foo4',       },
 );
 
 ok(PGObject::Util::BulkLoad::copy($series1, @mainobj), 

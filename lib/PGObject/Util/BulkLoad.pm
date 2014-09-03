@@ -15,11 +15,11 @@ PGObject::Util::BulkLoad - Bulk load records into PostgreSQL
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 
 =head1 SYNOPSIS
@@ -308,7 +308,7 @@ sub _to_csv {
     my $csv = Text::CSV->new();
     join("\n", map {
        my $obj = $_;
-       $csv->combine(map { $obj->{$_} } @{$args->{cols}});
+       $csv->combine(map { exists $obj->{$_} ? $obj->{$_} : undef } @{$args->{cols}});
        $csv->string();
     } @_);
 }
