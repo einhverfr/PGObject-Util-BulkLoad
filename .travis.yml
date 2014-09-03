@@ -19,5 +19,6 @@ before_install:
    - "cpanm Memoize"
    - "cpanm Text::CSV"
    - "cpanm Test::More"
+   - "cpanm Devel::Cover::Report::Coveralls"
 script:
    perl Makefile.PL && make test && cover -test -report coveralls
