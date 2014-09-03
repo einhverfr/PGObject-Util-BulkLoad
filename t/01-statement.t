@@ -1,5 +1,5 @@
 use PGObject::Util::BulkLoad;
-use Test::More tests => 9;
+use Test::More tests => 12;
 
 sub normalize_whitespace {
     my $string = shift;
@@ -26,14 +26,14 @@ group_stats_by => ['foo'],
                   INSERT INTO "foo" ("foo", "bar", "baz")
                   SELECT "foo", "bar", "baz" FROM "tfoo"
                   WHERE ROW("tfoo"."baz") NOT IN (SELECT UP."baz" FROM UP)',
-           stats => '
-                   SELECT "tfoo"."foo", 
-                     SUM(CASE WHEN ROW ("foo"."baz") IS NULL THEN 1 ELSE 0 END)
-                          AS insert,
-                     SUM(CASE WHEN ROW ("foo"."baz") IS NULL THEN 0 ELSE 1 END)
-                          AS update
+           stats => 
+                   'SELECT "tfoo"."foo", 
+                     SUM(CASE WHEN ROW("foo"."baz") IS NULL THEN 1 ELSE 0 END)
+                          AS pgobject_bulkload_inserts,
+                     SUM(CASE WHEN ROW("foo"."baz") IS NULL THEN 0 ELSE 1 END)
+                          AS pgobject_bulkload_updates
                      FROM "tfoo"
-                LEFT JOIN "foo" USING ("foo")
+                LEFT JOIN "foo" USING ("baz")
                  GROUP BY "tfoo"."foo"',
                    
                   },
@@ -58,14 +58,14 @@ group_stats_by => ['foo', 'bar'],
                   INSERT INTO "foo" ("foo", "bar", "baz")
                   SELECT "foo", "bar", "baz" FROM "tfoo"
                   WHERE ROW("tfoo"."bar", "tfoo"."baz") NOT IN (SELECT UP."bar", UP."baz" FROM UP)',
-           stats => '
-                   SELECT "tfoo"."foo", "tfoo"."bar"
-                     SUM(CASE WHEN ROW ("foo"."bar", "foo"."baz") IS NULL THEN 1 ELSE 0 END)
-                          AS insert,
-                     SUM(CASE WHEN ROW ("foo"."bar", "foo"."baz") IS NULL THEN 0 ELSE 1 END)
-                          AS update
+           stats => 
+                   'SELECT "tfoo"."foo", "tfoo"."bar",
+                     SUM(CASE WHEN ROW("foo"."bar", "foo"."baz") IS NULL THEN 1 ELSE 0 END)
+                          AS pgobject_bulkload_inserts,
+                     SUM(CASE WHEN ROW("foo"."bar", "foo"."baz") IS NULL THEN 0 ELSE 1 END)
+                          AS pgobject_bulkload_updates
                      FROM "tfoo"
-                LEFT JOIN "foo" USING ("foo")
+                LEFT JOIN "foo" USING ("bar", "baz")
                  GROUP BY "tfoo"."foo", "tfoo"."bar"',
                   },
 };
@@ -89,14 +89,14 @@ group_stats_by => [qw(b"a"z)],
                   INSERT INTO "foo" ("fo""o""", "bar", "b""a""z")
                   SELECT "fo""o""", "bar", "b""a""z" FROM "tfoo"
                   WHERE ROW("tfoo"."b""a""z") NOT IN (SELECT UP."b""a""z" FROM UP)',
-           stats => '
-                   SELECT "tfoo"."b""a""z",
-                     SUM(CASE WHEN ROW ("foo"."b""a""z") IS NULL THEN 1 ELSE 0 END)
-                          AS insert,
-                     SUM(CASE WHEN ROW ("foo"."b""a""z") IS NULL THEN 0 ELSE 1 END)
-                          AS update
+           stats => 
+                   'SELECT "tfoo"."b""a""z",
+                     SUM(CASE WHEN ROW("foo"."b""a""z") IS NULL THEN 1 ELSE 0 END)
+                          AS pgobject_bulkload_inserts,
+                     SUM(CASE WHEN ROW("foo"."b""a""z") IS NULL THEN 0 ELSE 1 END)
+                          AS pgobject_bulkload_updates
                      FROM "tfoo"
-                LEFT JOIN "foo" USING ("foo")
+                LEFT JOIN "foo" USING ("b""a""z")
                  GROUP BY "tfoo"."b""a""z"',
                   },
 };

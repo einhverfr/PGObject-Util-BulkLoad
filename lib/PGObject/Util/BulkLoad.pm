@@ -177,7 +177,7 @@ sub _sanitize_ident {
 
 sub _statement_stats {
     my ($args) = @_;
-    croak 'Key columns must array ref' unless ref $args->{key_cols} =~ /ARRAY/;
+    croak 'Key columns must array ref' unless (ref $args->{key_cols}) =~ /ARRAY/;
     croak 'Must supply key columns' unless @{$args->{key_cols}};
     croak 'Must supply table name' unless $args->{table};
     croak 'Must supply temp table' unless $args->{tempname};
@@ -187,7 +187,7 @@ sub _statement_stats {
                  ? @{$args->{group_stats_by}} 
                  : @{$args->{key_cols}};
     my $table = _sanitize_ident($args->{table});
-    my $temp = _sanitize_ident($args->{temp});
+    my $temp = _sanitize_ident($args->{tempname});
     "SELECT " . join(', ', map {"$temp." . _sanitize_ident($_)} @groupcols) . ",
             SUM(CASE WHEN ROW(" . join(', ', map {"$table." . _sanitize_ident($_)
                                       } @{$args->{key_cols}}) . ") IS NULL
