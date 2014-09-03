@@ -308,7 +308,7 @@ sub _to_csv {
     my $csv = Text::CSV->new();
     join("\n", map {
        my $obj = $_;
-       $csv->combine(map { exists $obj->{$_} ? $obj->{$_} : undef } @{$args->{cols}});
+       $csv->combine(map { $obj->{$_} } @{$args->{cols}});
        $csv->string();
     } @_);
 }
