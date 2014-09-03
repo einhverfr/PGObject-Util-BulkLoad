@@ -20,4 +20,4 @@ before_install:
    - "cpanm Test::More"
    - "cpanm Devel::Cover::Report::Coveralls"
 script:
-   perl Makefile.PL && make test && cover -test -report coveralls
+   export RELEASE_TESTING=1 && perl Makefile.PL && make test && cover -test -report coveralls
