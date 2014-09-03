@@ -326,8 +326,9 @@ sub upsert {
 
     $dbh->do(statement( %$args, (type => 'upsert', 
                               tempname => 'pgobject_bulkloader')));
-    $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");
+    my $dropstatus = $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");
     return $return_value if $args->{group_stats_by};
+    return $dropstatus;
 }
 
 =head2 copy
