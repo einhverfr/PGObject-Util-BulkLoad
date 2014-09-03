@@ -186,23 +186,23 @@ sub _statement_stats {
     @groupcols = $args->{group_stats_by} 
                  ? @{$args->{group_stats_by}} 
                  : @{$args->{key_cols}};
-
-    "SELECT " . join(', ', map {_sanitize_ident($_)} @groupcols) . ",
-            SUM(CASE WHEN ROW(" . join(', ', map {_sanitize_ident($_)
+    my $table = _sanitize_ident($args->{table});
+    my $temp = _sanitize_ident($args->{temp});
+    "SELECT " . join(', ', map {"$temp." . _sanitize_ident($_)} @groupcols) . ",
+            SUM(CASE WHEN ROW(" . join(', ', map {"$table." . _sanitize_ident($_)
                                       } @{$args->{key_cols}}) . ") IS NULL
                      THEN 1
                      ELSE 0
              END) AS pgobject_bulkload_inserts,
-            SUM(CASE WHEN ROW(" . join(', ', map {_sanitize_ident($_)
+            SUM(CASE WHEN ROW(" . join(', ', map {"$table." . _sanitize_ident($_)
                                       } @{$args->{key_cols}}) . ") IS NULL
                      THEN 0
                      ELSE 1
             END) AS pgobject_bulkload_updates
-       FROM " . _sanitize_ident($args->{tempname}) . "
-  LEFT JOIN " . _sanitize_ident($args->{table}) . " 
-            USING (" . join(', ', map {_sanitize_ident($_)
-                                      } @{$args->{key_cols}}) . ")
-   GROUP BY " . join(', ', map {_sanitize_ident($_)} @groupcols);
+       FROM $temp
+  LEFT JOIN $table USING (" . join(', ', map {_sanitize_ident($_)
+                                             } @{$args->{key_cols}}) . ")
+   GROUP BY " . join(', ', map {"$temp." . _sanitize_ident($_)} @groupcols);
 }
 
 sub _statement_temp {
@@ -375,6 +375,20 @@ sub copy {
     $dbh->pg_putcopyend();
 }
 
+=head2 get_stats
+
+Takes the same arguments as upsert plus group_stats_by
+
+Returns an array of hashrefs representing the number of inserts and updates
+that an upsert will perform.  It must be performed before the upsert statement
+actually runs.  Typically this is run via the upsert command (which 
+automatically runs this if group_stats_by is set in the argumements hash).
+
+There is a performance penalty here since an unindexed left join is required 
+between the temp and the normal table.
+
+=cut
+
 sub get_stats {
     my ($args) = shift;
     $args = shift if $args eq __PACKAGE__;
@@ -389,7 +403,7 @@ sub get_stats {
                   inserts => pop @row,
               },
               keys => {
-                 map { $_ => shift @row } @{$args->{key_cols}}
+                 map { $_ => shift @row } @{$args->{group_stats_by}}
               },
             } 
           } $dbh->selectall_arrayref(statement(%$args, (type => 'stats')))
