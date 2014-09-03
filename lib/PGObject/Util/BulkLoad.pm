@@ -188,12 +188,12 @@ sub _statement_stats {
                  : @{$args->{key_cols}};
 
     "SELECT " . join(', ', map {_sanitize_ident($_)} @groupcols) . ",
-            SUM(CASE WHEN ROW(" . map {_sanitize_ident($_)
+            SUM(CASE WHEN ROW(" . join(', ', map {_sanitize_ident($_)
                                       } @{$args->{key_cols}}) . ") IS NULL
                      THEN 1
                      ELSE 0
              END) AS pgobject_bulkload_inserts,
-            SUM(CASE WHEN ROW(" . map {_sanitize_ident($_)
+            SUM(CASE WHEN ROW(" . join(', ', map {_sanitize_ident($_)
                                       } @{$args->{key_cols}}) . ") IS NULL
                      THEN 0
                      ELSE 1
@@ -312,7 +312,7 @@ sub upsert {
     # a permanent table there, they are inviting disaster.  At any rate this is
     # safe but a plain drop without schema qualification risks losing user data.
 
-    my $return_val;
+    my $return_value;
 
     $dbh->do("DROP TABLE IF EXISTS pg_temp.pgobject_bulkloader");
     $dbh->do(statement( %$args, (type => 'temp', 
@@ -392,7 +392,7 @@ sub get_stats {
                  map { $_ => shift @row } @{$args->{key_cols}}
               },
             } 
-          } $dbh->selectall_arrayref(statement(%args, (type => 'stats')))
+          } $dbh->selectall_arrayref(statement(%$args, (type => 'stats')))
     };
 }
 
