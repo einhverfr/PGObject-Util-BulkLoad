@@ -135,6 +135,10 @@ sql COPY statement
 
 Update/Insert CTE pulling temp table
 
+=item stats
+
+Get stats on pending upsert, grouped by an arbitrary column.
+
 =back
 
 =item table
@@ -157,6 +161,10 @@ Column names for update
 
 Names of columns in primary key.
 
+=item group_stats_by
+
+Names of columns to group stats by
+
 =back
 
 =cut
@@ -165,6 +173,36 @@ sub _sanitize_ident {
     my($string) = @_;
     $string =~ s/"/""/g;
     qq("$string");
+}
+
+sub _statement_stats {
+    my ($args) = @_;
+    croak 'Key columns must array ref' unless ref $args->{key_cols} =~ /ARRAY/;
+    croak 'Must supply key columns' unless @{$args->{key_cols}};
+    croak 'Must supply table name' unless $args->{table};
+    croak 'Must supply temp table' unless $args->{tempname};
+
+    my @groupcols;
+    @groupcols = $args->{group_stats_by} 
+                 ? @{$args->{group_stats_by}} 
+                 : @{$args->{key_cols}};
+
+    "SELECT " . join(', ', map {_sanitize_ident($_)} @groupcols) . ",
+            SUM(CASE WHEN ROW(" . map {_sanitize_ident($_)
+                                      } @{$args->{key_cols}}) . ") IS NULL
+                     THEN 1
+                     ELSE 0
+             END) AS pgobject_bulkload_inserts,
+            SUM(CASE WHEN ROW(" . map {_sanitize_ident($_)
+                                      } @{$args->{key_cols}}) . ") IS NULL
+                     THEN 0
+                     ELSE 1
+            END) AS pgobject_bulkload_updates
+       FROM " . _sanitize_ident($args->{tempname}) . "
+  LEFT JOIN " . _sanitize_ident($args->{table}) . " 
+            USING (" . join(', ', map {_sanitize_ident($_)
+                                      } @{$args->{key_cols}}) . ")
+   GROUP BY " . join(', ', map {_sanitize_ident($_)} @groupcols);
 }
 
 sub _statement_temp {
@@ -274,14 +312,22 @@ sub upsert {
     # a permanent table there, they are inviting disaster.  At any rate this is
     # safe but a plain drop without schema qualification risks losing user data.
 
+    my $return_val;
+
     $dbh->do("DROP TABLE IF EXISTS pg_temp.pgobject_bulkloader");
     $dbh->do(statement( %$args, (type => 'temp', 
                               tempname => 'pgobject_bulkloader')
     ));
     copy({(%$args, (table => 'pgobject_bulkloader'))}, @_);
+
+    if ($args->{group_stats_by}){
+        $return_value = get_stats({(%$args, (table => 'pgobject_bulkloader'))});
+    }
+
     $dbh->do(statement( %$args, (type => 'upsert', 
                               tempname => 'pgobject_bulkloader')));
     $dbh->do("DROP TABLE pg_temp.pgobject_bulkloader");
+    return $return_value if $args->{group_stats_by};
 }
 
 =head2 copy
@@ -327,6 +373,27 @@ sub copy {
     $dbh->do(statement(%$args, (type => 'copy')));
     $dbh->pg_putcopydata(_to_csv({cols => $args->{insert_cols}}, @_));
     $dbh->pg_putcopyend();
+}
+
+sub get_stats {
+    my ($args) = shift;
+    $args = shift if $args eq __PACKAGE__;
+    $args = _build_args($args, $_[0]);
+    my $dbh = $args->{dbh};
+
+    my $returnval = { 
+          map { 
+            my @row = @$_;
+            { stats => {
+                  updates => pop @row,
+                  inserts => pop @row,
+              },
+              keys => {
+                 map { $_ => shift @row } @{$args->{key_cols}}
+              },
+            } 
+          } $dbh->selectall_arrayref(statement(%args, (type => 'stats')))
+    };
 }
 
 =head1 AUTHOR
