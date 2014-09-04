@@ -15,11 +15,11 @@ PGObject::Util::BulkLoad - Bulk load records into PostgreSQL
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 
 =head1 SYNOPSIS
@@ -71,6 +71,29 @@ To unmemoize:
 To flush cache
 
   PGObject::Util::BulkLoad->flush_memoization;
+
+As of 0.05, an object oriented interface is included.  Note that the memoize
+calls are global but all other calls are subject to a fairly consistent
+interface. where the first series of arguments become the arguments (for 
+exceptions see below) for the rest of the actions.  This makes behavior 
+management a little easier.  Note that in this interface, the object is 
+effectively immutable (or should be), so if you want to change it, create a
+new object:
+
+  my $bulkloader = PGObject::Util::BulkLoad->new(
+       table         => 'foo',
+       tempname      => 'bar', # defaults to "pgobject_bulkload_$table"
+       insert_cols   => [qw(foo bar baz baz2)],
+       update_cols   => [qw(foo bar)],
+       key_cols      => [qw(baz baz2)],
+       dbh           => $dbh,
+  );
+  $bulkloader->copy(@objects);
+  $bulkloader->copy_temp(@objects);
+  $bulkloader->upsert(@objects);
+  $bulkloader->reset_temp;
+  $bulkloader->destroy_temp;
+       
 
 =head1 DESCRIPTION
 
