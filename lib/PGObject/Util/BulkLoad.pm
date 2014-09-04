@@ -281,6 +281,14 @@ Columns to update (by name)
 
 Key columns (by name)
 
+=item group_stats_by
+
+This is an array of column names for optional stats retrieval and grouping.
+If it is set then we will grab the stats and return them.  Note this has a 
+performance penalty because it means an extra scan of the temp table and an
+extra join against the parent table.  See get_stats for the return value
+information if this is set.
+
 =back
 
 =cut
@@ -390,6 +398,22 @@ automatically runs this if group_stats_by is set in the argumements hash).
 
 There is a performance penalty here since an unindexed left join is required 
 between the temp and the normal table.
+
+This function requires tempname, table, and group_stats_by to be set in the
+argument hashref.  The return value is a list of hashrefs with the following 
+keys:
+
+=over
+
+=item stats
+
+Hashref with keys inserts and updates including numbers of rows.
+
+=item keys
+
+Hashref for key columns and their values, by name
+
+=back
 
 =cut
 
