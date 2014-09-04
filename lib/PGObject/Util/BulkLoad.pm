@@ -287,7 +287,8 @@ Key columns (by name)
 
 sub _build_args {
     my ($init_args, $obj) = @_;
-    my @arglist = qw(table insert_cols update_cols key_cols dbh);
+    my @arglist = qw(table insert_cols update_cols key_cols dbh 
+                     tempname group_stats_by);
     return { 
        map {  my $val;
               for my $v ($init_args->{$_}, try { $obj->$_ } ){
@@ -321,7 +322,9 @@ sub upsert {
     copy({(%$args, (table => 'pgobject_bulkloader'))}, @_);
 
     if ($args->{group_stats_by}){
-        $return_value = get_stats({(%$args, (table => 'pgobject_bulkloader'))});
+        $return_value = get_stats(
+                {(%$args, (tempname => 'pgobject_bulkloader'))}
+        );
     }
 
     $dbh->do(statement( %$args, (type => 'upsert', 
@@ -393,10 +396,16 @@ between the temp and the normal table.
 sub get_stats {
     my ($args) = shift;
     $args = shift if $args eq __PACKAGE__;
+    try {
+       no warnings;
+       no strict;
+       $args->can('foo');
+       unshift @_, $args; # args is an object
+    };
     $args = _build_args($args, $_[0]);
     my $dbh = $args->{dbh};
 
-    my $returnval = { 
+    my $returnval = [
           map { 
             my @row = @$_;
             { stats => {
@@ -407,8 +416,8 @@ sub get_stats {
                  map { $_ => shift @row } @{$args->{group_stats_by}}
               },
             } 
-          } $dbh->selectall_arrayref(statement(%$args, (type => 'stats')))
-    };
+          } @{ $dbh->selectall_arrayref(statement(%$args, (type => 'stats'))) }
+    ];
 }
 
 =head1 AUTHOR
