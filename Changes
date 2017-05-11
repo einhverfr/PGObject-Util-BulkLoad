@@ -1,5 +1,8 @@
 Revision history for PGObject-Util-BulkLoad
 
+0.06	2017-05-16
+	Removed mymeta.json from manifest
+
 0.04    2014-09-05
         Includes the ability to grab statistics on expected inserts and updates
         grouped by arbitrary columns
